@@ -3,30 +3,30 @@
 #include <sstream>
 #include <vector>
 #include <string>
-
 #include <cmath>
 #include <algorithm>
 
 struct SleepData {
-    std::vector<int> time;
+    std::vector<std::string> time;
     std::vector<double> HR;
 };
 
-std::vector<SleepData> loadData(const std::string& path) {
+std::vector<SleepData> loadData(const std::string& directory) {
     std::vector<SleepData> data;
     for (int i = 0; i < 23; i++) {
         for (int j = 0; j < 2; j++) {
             std::string user = "user_" + std::to_string(i + 1);
-            std::string filePath = "updated_data\\" + user + "_sleep_" + std::to_string(j) + ".csv";
+            std::string filePath = directory + "\\" + user + "_sleep_" + std::to_string(j) + ".csv";
             std::ifstream file(filePath);
             if (file.is_open()) {
                 std::string line;
                 SleepData sleepData;
+                std::getline(file, line); // Skip header
                 while (std::getline(file, line)) {
                     std::istringstream iss(line);
                     std::string timeStr, hrStr;
                     if (std::getline(iss, timeStr, ',') && std::getline(iss, hrStr, ',')) {
-                        sleepData.time.push_back(std::stoi(timeStr));
+                        sleepData.time.push_back(timeStr);
                         sleepData.HR.push_back(std::stod(hrStr));
                     }
                 }
@@ -45,14 +45,14 @@ void normalizeData(std::vector<SleepData>& data) {
             mean += hr;
         }
         mean /= elem.HR.size();
-        
+
         double variance = 0.0;
         for (const auto& hr : elem.HR) {
             variance += std::pow(hr - mean, 2);
         }
         variance /= elem.HR.size();
         double stdDev = std::sqrt(variance);
-        
+
         for (auto& hr : elem.HR) {
             hr = (hr - mean) / stdDev;
         }
@@ -81,18 +81,14 @@ int main() {
 
     std::vector<SleepData> compatible_hours;
     for (auto& elem : liste) {
-        std::vector<int> filteredTime;
-        std::vector<double> filteredHR;
+        SleepData filteredData;
         for (size_t i = 0; i < elem.time.size(); i++) {
-            if (elem.time[i] >= std::stoi(scope[0]) && elem.time[i] <= std::stoi(scope[1]) && elem.HR[i] > 0) {
-                filteredTime.push_back(elem.time[i]);
-                filteredHR.push_back(elem.HR[i]);
+            if (elem.time[i] >= scope[0] && elem.time[i] <= scope[1] && elem.HR[i] > 0) {
+                filteredData.time.push_back(elem.time[i]);
+                filteredData.HR.push_back(elem.HR[i]);
             }
         }
-        SleepData compatibleData;
-        compatibleData.time = filteredTime;
-        compatibleData.HR = filteredHR;
-        compatible_hours.push_back(compatibleData);
+        compatible_hours.push_back(filteredData);
     }
 
     std::vector<std::string> best_hours;
@@ -100,7 +96,7 @@ int main() {
         auto maxIt = std::max_element(elem.HR.begin(), elem.HR.end());
         if (maxIt != elem.HR.end()) {
             int maxIndex = std::distance(elem.HR.begin(), maxIt);
-            best_hours.push_back(std::to_string(elem.time[maxIndex]));
+            best_hours.push_back(elem.time[maxIndex]);
         }
     }
 
