@@ -1,0 +1,121 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+
+#include <cmath>
+#include <algorithm>
+
+struct SleepData {
+    std::vector<int> time;
+    std::vector<double> HR;
+};
+
+std::vector<SleepData> loadData(const std::string& path) {
+    std::vector<SleepData> data;
+    for (int i = 0; i < 23; i++) {
+        for (int j = 0; j < 2; j++) {
+            std::string user = "user_" + std::to_string(i + 1);
+            std::string filePath = "updated_data\\" + user + "_sleep_" + std::to_string(j) + ".csv";
+            std::ifstream file(filePath);
+            if (file.is_open()) {
+                std::string line;
+                SleepData sleepData;
+                while (std::getline(file, line)) {
+                    std::istringstream iss(line);
+                    std::string timeStr, hrStr;
+                    if (std::getline(iss, timeStr, ',') && std::getline(iss, hrStr, ',')) {
+                        sleepData.time.push_back(std::stoi(timeStr));
+                        sleepData.HR.push_back(std::stod(hrStr));
+                    }
+                }
+                file.close();
+                data.push_back(sleepData);
+            }
+        }
+    }
+    return data;
+}
+
+void normalizeData(std::vector<SleepData>& data) {
+    for (auto& elem : data) {
+        double mean = 0.0;
+        for (const auto& hr : elem.HR) {
+            mean += hr;
+        }
+        mean /= elem.HR.size();
+        
+        double variance = 0.0;
+        for (const auto& hr : elem.HR) {
+            variance += std::pow(hr - mean, 2);
+        }
+        variance /= elem.HR.size();
+        double stdDev = std::sqrt(variance);
+        
+        for (auto& hr : elem.HR) {
+            hr = (hr - mean) / stdDev;
+        }
+    }
+}
+
+std::string getUserInput(const std::string& prompt) {
+    std::string input;
+    std::cout << prompt;
+    std::getline(std::cin, input);
+    return input;
+}
+
+int main() {
+    std::vector<SleepData> liste = loadData("updated_data");
+    normalizeData(liste);
+
+    std::string Reveil_souhaité = getUserInput("Quand voulez-vous vous réveiller ? (hh:mm)");
+    int heure = std::stoi(Reveil_souhaité.substr(0, 2));
+    int minute = std::stoi(Reveil_souhaité.substr(3, 2));
+    int born_sup = heure * 60 + minute + 60;
+    std::string born_sup_str = (born_sup / 60 < 10 ? "0" : "") + std::to_string(born_sup / 60) + ":" + std::to_string(born_sup % 60) + ":00";
+    int born_inf = heure * 60 + minute - 60;
+    std::string born_inf_str = (born_inf / 60 < 10 ? "0" : "") + std::to_string(born_inf / 60) + ":" + std::to_string(born_inf % 60) + ":00";
+    std::vector<std::string> scope = {born_inf_str, born_sup_str};
+
+    std::vector<SleepData> compatible_hours;
+    for (auto& elem : liste) {
+        std::vector<int> filteredTime;
+        std::vector<double> filteredHR;
+        for (size_t i = 0; i < elem.time.size(); i++) {
+            if (elem.time[i] >= std::stoi(scope[0]) && elem.time[i] <= std::stoi(scope[1]) && elem.HR[i] > 0) {
+                filteredTime.push_back(elem.time[i]);
+                filteredHR.push_back(elem.HR[i]);
+            }
+        }
+        SleepData compatibleData;
+        compatibleData.time = filteredTime;
+        compatibleData.HR = filteredHR;
+        compatible_hours.push_back(compatibleData);
+    }
+
+    std::vector<std::string> best_hours;
+    for (const auto& elem : compatible_hours) {
+        auto maxIt = std::max_element(elem.HR.begin(), elem.HR.end());
+        if (maxIt != elem.HR.end()) {
+            int maxIndex = std::distance(elem.HR.begin(), maxIt);
+            best_hours.push_back(std::to_string(elem.time[maxIndex]));
+        }
+    }
+
+    int res = 0;
+    for (const auto& elem : best_hours) {
+        int hours = std::stoi(elem.substr(0, 2));
+        int minutes = std::stoi(elem.substr(3, 2));
+        int seconds = std::stoi(elem.substr(6, 2));
+        res += hours * 3600 + minutes * 60 + seconds;
+    }
+    res /= best_hours.size();
+
+    std::string best = std::to_string(res / 3600) + ":" + std::to_string((res % 3600) / 60) + ":" + std::to_string((res % 3600) % 60);
+
+    std::cout << "Vous devriez vous réveiller à " << best << std::endl;
+
+    return 0;
+}
