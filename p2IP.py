@@ -1,4 +1,3 @@
-# extract info from csv documents to create a big csv containing all the info we need for our study
 # @author: 2022-2023, Charles DUVAL, Dylan DRAY
 
 #%% import libraries
@@ -30,10 +29,6 @@ import time as t
 # value_date = pd.to_datetime(value, format = '%H:%M')
 # value_2_date = pd.to_datetime(value_2, format = '%H:%M')
 
-
-
-
-
 # #for each line of the dataframe useful_data_sleep
 # sleep_dataframes = [] # a list of daframe, containinf the sleep HR of each sleep period
 # for index, row in useful_data_sleep.iterrows():
@@ -53,6 +48,7 @@ import time as t
 # for i in range(len(sleep_dataframes)):
 #     sleep_dataframes[i].to_csv("MMASH\\DataPaper\\"+user + "\\sleep_" + str(i) + ".csv", sep = ",", index = False)
 
+
 #%% effective code
 import pandas as pd # to analyse data
 from icecream import ic # a better print
@@ -70,7 +66,6 @@ def function(nb_user):
     sleep_dataframes = [] # a list of daframe, containinf the sleep HR of each sleep period
     for index, row in useful_data_sleep.iterrows():
         hr_sleep_dataframe = pd.DataFrame(columns = ['HR', 'day', 'time'])
-        #fill the hr_sleep_dataframe with the HR contained in the useful_data dataframe where the day coincide and the time is between IN BED TIME and OUT BED TIME
         for index2, row2 in useful_data.iterrows():
             if row['In Bed Date'] == row['Out Bed Date']:
                 if row2['day'] == row['In Bed Date'] and row2['time'] >= row['In Bed Time'] and row2['time'] <= row['Out Bed Time']:
